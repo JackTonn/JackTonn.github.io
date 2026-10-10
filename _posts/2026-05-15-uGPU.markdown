@@ -1,0 +1,36 @@
+---
+layout: post
+title:  uGPU
+date:   2026-05-15 17:00:00 -0500
+categories: Project
+---
+
+## Summary
+If there was any project to look at on this website, this would be the one. uGPU is an embedded GPU Application Specific Integrated Circuit (ASIC) that is being fabrication through the SKY130 process. The GPU uses a shader cores to run the vertex and fragment shade programs in parallel, feeding and receiving values from the rasterizer throughout this process
+
+<div style="text-align:center;">
+  <img
+    src="{{ '/assets/images/uGPU/top_level_diagram.png' | relative_url }}"
+    alt="Top Level Diagram"
+    width="600">
+</div>
+
+
+uGPU is my senior design project, with the official name Digital ASIC for Fabrication. Our official senior design page is available [here](https://sdmay26-24.sd.ece.iastate.edu/). uGPU is an embedded GPU Application Specific Integrated Circuit (ASIC), which we will get back as a physical silicon design later this year. It outputs at a cinematic 320 x 240 pixels with 8 bit color. The framerate is dependant on what model is being rendered, because different models have different triangles.
+
+For this project, I specifically worked on the testing plan, the GPU cores (sometimes referred to as SIMD lanes). We verified with SVUnit tests that had randomized inputs, which helped ensure that our designs worked as expected.
+
+The shader cores implement a custom RISC-V-inspired ISA, meeting the specific needs of uGPU computations on a 5 stage pipeline. Below shows the dataflow of the shader cores, with the data flowing from top to bottom, and the pipeline registers bolded. Note that each core has a register-space of 64 32-bit registers, with the lower 16 being local to the core, and the upper 48 being global across all cores.
+
+Instead of branching, the cores implement predication to decide if they should do the work of an instruction or not. Thus, each shader core has a 3-bit predicate status register, and each instruction has a 3-bit predicate field. When a core's predicate status matches the predicate field, the core does the work of the instruction. If it does not, the core assigns 0 to all control signals that read or write values to memory or regfiles. As an exception, the set and clear predicate `clrp` and `spr` cannot be predicated, allowing for simple core reset and setup procedures. Additionally, jump return `jret` and `halt` are unpredicable, meaning that when one core returns from a function call, all cores return, and when one core stops a program, all cores stop the program.
+
+Each core also implements an inbox and an outbox, with the intended usage of the outbox sending the vertex shade homogeneous vector, texture coordinates, and 6 words of metadata to the rasterizer. The intended usage of the inbox is to gather fragment data from the Fragment FIFO giving fragment color, screen position, and the 6 metadata words.
+
+
+Team members: [Colin McGann](), [Michael Drobot](), [Josh Arceo](), [Dawud Benedict](), [Sam Forde](), [Emil Kosic]()
+
+<iframe
+    src="{{ '/assets/documents/sdmay26_24_Design_Document-3.pdf' | relative_url }}"
+    width="100%"
+    height="800">
+</iframe>
